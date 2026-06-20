@@ -1,0 +1,6 @@
+{
+  "name": "EcoFlow",
+  "description": "An intelligent, context-aware AI sustainability assistant and action-oriented carbon tracker supporting daily logs, maps-based transit comparison, and personal reduction milestones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
