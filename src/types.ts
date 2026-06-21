@@ -108,3 +108,19 @@ export interface CarbonSummary {
   totalSavedCo2: number;
   unlockedBadges: string[];
 }
+
+export interface UserSession {
+  uid: string;
+  email: string;
+  displayName: string;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  points: number;
+  activeStreak: number;
+  createdAt: string;
+}
+

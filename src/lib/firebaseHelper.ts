@@ -11,7 +11,7 @@ import {
   addDoc
 } from "firebase/firestore";
 import { db, auth } from "./firebase";
-import { ActivityLog, EcoChallenge, ActivityType, AICoachMessage } from "../types";
+import { ActivityLog, EcoChallenge, ActivityType, AICoachMessage, UserProfile } from "../types";
 
 export enum OperationType {
   CREATE = 'create',
@@ -58,15 +58,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
-}
-
-export interface UserProfile {
-  uid: string;
-  email: string;
-  displayName: string;
-  points: number;
-  activeStreak: number;
-  createdAt: string;
 }
 
 // Ensure preloaded seeds exist in Firestore challenges collection for the user
