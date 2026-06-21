@@ -312,7 +312,7 @@ app.post("/api/route-planner", async (req, res) => {
   if (!isDistanceResolved && ai) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: `Given the start location: "${originStr}" and the destination: "${destinationStr}", calculate the realistic ground driving distance in kilometers and ground driving duration in minutes. Ensure this is highly aligned with Google Maps or other actual mapping systems.
         
 Return ONLY a valid JSON object of the exact form:
@@ -443,7 +443,7 @@ app.all("/api/insights", async (req, res) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: contextPrompt,
     });
 
@@ -574,7 +574,7 @@ What specific sustainability habit shall we tackle next?`;
   try {
     // Make actual secure server-side Gemini API call with structured chat session
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: [...formattedHistory, { role: "user", parts: [{ text: message }] }],
       config: {
         systemInstruction: systemPrompt,

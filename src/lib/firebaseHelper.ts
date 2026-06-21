@@ -10,8 +10,55 @@ import {
   deleteDoc,
   addDoc
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import { ActivityLog, EcoChallenge, ActivityType, AICoachMessage } from "../types";
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export interface UserProfile {
   uid: string;
@@ -105,7 +152,12 @@ export async function ensureUserChallengesAndProfile(uid: string, email: string,
   }
 
   const userDocRef = doc(db, "users", uid);
-  const userSnap = await getDoc(userDocRef);
+  let userSnap;
+  try {
+    userSnap = await getDoc(userDocRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${uid}`);
+  }
   
   let profile: UserProfile;
 
@@ -119,7 +171,11 @@ export async function ensureUserChallengesAndProfile(uid: string, email: string,
       activeStreak: 5,
       createdAt: new Date().toISOString()
     };
-    await setDoc(userDocRef, profile);
+    try {
+      await setDoc(userDocRef, profile);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${uid}`);
+    }
   } else {
     profile = userSnap.data() as UserProfile;
     // Fill in missing parts if needed
@@ -130,7 +186,12 @@ export async function ensureUserChallengesAndProfile(uid: string, email: string,
 
   // Check if challenges exist in subcollection
   const challengesColRef = collection(db, "users", uid, "challenges");
-  const chalSnap = await getDocs(challengesColRef);
+  let chalSnap;
+  try {
+    chalSnap = await getDocs(challengesColRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${uid}/challenges`);
+  }
 
   if (chalSnap.empty) {
     // Seed initial challenges for this specific user
@@ -189,7 +250,11 @@ export async function ensureUserChallengesAndProfile(uid: string, email: string,
 
     for (const chal of defaultChallenges) {
       const docRef = doc(db, "users", uid, "challenges", chal.id);
-      await setDoc(docRef, chal);
+      try {
+        await setDoc(docRef, chal);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `users/${uid}/challenges/${chal.id}`);
+      }
     }
   }
 
@@ -238,7 +303,12 @@ export async function fetchUserLogs(uid: string): Promise<ActivityLog[]> {
 
   const colRef = collection(db, "users", uid, "logs");
   const q = query(colRef);
-  const snap = await getDocs(q);
+  let snap;
+  try {
+    snap = await getDocs(q);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, `users/${uid}/logs`);
+  }
   const logsArr: ActivityLog[] = [];
   snap.forEach((d) => {
     logsArr.push({ id: d.id, ...d.data() } as ActivityLog);
@@ -311,7 +381,12 @@ export async function fetchUserChallenges(uid: string): Promise<EcoChallenge[]> 
   }
 
   const colRef = collection(db, "users", uid, "challenges");
-  const snap = await getDocs(colRef);
+  let snap;
+  try {
+    snap = await getDocs(colRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${uid}/challenges`);
+  }
   const challengesArr: EcoChallenge[] = [];
   snap.forEach((d) => {
     challengesArr.push(d.data() as EcoChallenge);
@@ -345,20 +420,33 @@ export async function toggleUserChallenge(uid: string, challengeId: string, curr
   }
 
   const chalDocRef = doc(db, "users", uid, "challenges", challengeId);
-  await updateDoc(chalDocRef, {
-    completed: !currentCompleted
-  });
+  try {
+    await updateDoc(chalDocRef, {
+      completed: !currentCompleted
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${uid}/challenges/${challengeId}`);
+  }
 
   const userDocRef = doc(db, "users", uid);
-  const userSnap = await getDoc(userDocRef);
+  let userSnap;
+  try {
+    userSnap = await getDoc(userDocRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${uid}`);
+  }
   let newPoints = 350;
   if (userSnap.exists()) {
     const profile = userSnap.data() as UserProfile;
     const diff = !currentCompleted ? pointsValue : -pointsValue;
     newPoints = Math.max(0, (profile.points || 0) + diff);
-    await updateDoc(userDocRef, {
-      points: newPoints
-    });
+    try {
+      await updateDoc(userDocRef, {
+        points: newPoints
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+    }
   }
 
   return { success: true, newPoints };
@@ -378,7 +466,11 @@ export async function addUserLog(uid: string, log: ActivityLog): Promise<void> {
   }
 
   const docRef = doc(db, "users", uid, "logs", log.id);
-  await setDoc(docRef, log);
+  try {
+    await setDoc(docRef, log);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `users/${uid}/logs/${log.id}`);
+  }
 }
 
 // Delete log from user Firestore collection
@@ -395,5 +487,9 @@ export async function deleteUserLog(uid: string, logId: string): Promise<void> {
   }
 
   const docRef = doc(db, "users", uid, "logs", logId);
-  await deleteDoc(docRef);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `users/${uid}/logs/${logId}`);
+  }
 }

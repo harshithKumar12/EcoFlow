@@ -14,6 +14,16 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const TABS_CONFIG = [
+  { value: ActivityType.TRANSPORT, label: "Transport", icon: Car, color: "text-emerald-600 bg-emerald-50/70", selectedClass: "border-emerald-500 bg-emerald-500/10 text-emerald-700 shadow-sm font-extrabold" },
+  { value: ActivityType.ELECTRICITY, label: "Energy", icon: Lightbulb, color: "text-amber-600 bg-amber-50/70", selectedClass: "border-amber-500 bg-amber-500/10 text-amber-700 shadow-sm font-extrabold" },
+  { value: ActivityType.FOOD, label: "Food Diet", icon: UtensilsCrossed, color: "text-blue-600 bg-blue-50/70", selectedClass: "border-blue-500 bg-blue-500/10 text-blue-700 shadow-sm font-extrabold" },
+  { value: ActivityType.SHOPPING, label: "Shopping", icon: ShoppingBag, color: "text-violet-600 bg-violet-50/70", selectedClass: "border-violet-500 bg-violet-500/10 text-violet-700 shadow-sm font-extrabold" },
+  { value: ActivityType.FLIGHTS, label: "Flights", icon: Plane, color: "text-pink-600 bg-pink-50/70", selectedClass: "border-pink-500 bg-pink-500/10 text-pink-700 shadow-sm font-extrabold" },
+  { value: ActivityType.WATER, label: "Water", icon: Droplet, color: "text-cyan-600 bg-cyan-50/70", selectedClass: "border-cyan-500 bg-cyan-500/10 text-cyan-700 shadow-sm font-extrabold" },
+  { value: ActivityType.WASTE, label: "Waste", icon: Trash2, color: "text-slate-600 bg-slate-100", selectedClass: "border-slate-500 bg-slate-500/10 text-slate-700 shadow-sm font-extrabold" },
+];
+
 interface LogActivityProps {
   onAddLog: (type: ActivityType, details: any, notes: string) => void;
 }
@@ -160,22 +170,12 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
     }, 300);
   };
 
-  const tabsConfig = [
-    { value: ActivityType.TRANSPORT, label: "Transport", icon: Car, color: "text-emerald-600 bg-emerald-50/70", selectedClass: "border-emerald-500 bg-emerald-500/10 text-emerald-700 shadow-sm font-extrabold" },
-    { value: ActivityType.ELECTRICITY, label: "Energy", icon: Lightbulb, color: "text-amber-600 bg-amber-50/70", selectedClass: "border-amber-500 bg-amber-500/10 text-amber-700 shadow-sm font-extrabold" },
-    { value: ActivityType.FOOD, label: "Food Diet", icon: UtensilsCrossed, color: "text-blue-600 bg-blue-50/70", selectedClass: "border-blue-500 bg-blue-500/10 text-blue-700 shadow-sm font-extrabold" },
-    { value: ActivityType.SHOPPING, label: "Shopping", icon: ShoppingBag, color: "text-violet-600 bg-violet-50/70", selectedClass: "border-violet-500 bg-violet-500/10 text-violet-700 shadow-sm font-extrabold" },
-    { value: ActivityType.FLIGHTS, label: "Flights", icon: Plane, color: "text-pink-600 bg-pink-50/70", selectedClass: "border-pink-500 bg-pink-500/10 text-pink-700 shadow-sm font-extrabold" },
-    { value: ActivityType.WATER, label: "Water", icon: Droplet, color: "text-cyan-600 bg-cyan-50/70", selectedClass: "border-cyan-500 bg-cyan-500/10 text-cyan-700 shadow-sm font-extrabold" },
-    { value: ActivityType.WASTE, label: "Waste", icon: Trash2, color: "text-slate-600 bg-slate-100", selectedClass: "border-slate-500 bg-slate-500/10 text-slate-700 shadow-sm font-extrabold" },
-  ];
-
   return (
     <div id="log-activity-form" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Category selector panel */}
       <div className="lg:col-span-1 bg-gradient-to-b from-white to-slate-50/80 border border-slate-200/90 shadow-sm rounded-2xl p-5 flex flex-col gap-1.5 h-fit">
         <h3 className="text-sm font-bold text-slate-700 px-2.5 mb-2">Category selection</h3>
-        {tabsConfig.map((tab) => {
+        {TABS_CONFIG.map((tab) => {
           const IconComp = tab.icon;
           const isSelected = activeTab === tab.value;
           return (

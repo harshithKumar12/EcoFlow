@@ -4,6 +4,12 @@ import { Send, Sparkles, MessageSquare, Compass, CheckCircle } from "lucide-reac
 import { motion, AnimatePresence } from "motion/react";
 import Markdown from "react-markdown";
 
+const QUICK_MISSIONS = [
+  "How can I lower my food footprint?",
+  "Show me electric vehicle vs gas car emission statistics",
+  "How do I reduce standby home energy leaks?",
+];
+
 interface AICoachProps {
   onAddLogFromCoach: (type: ActivityType, details: any, notes: string) => void;
   userName: string;
@@ -124,12 +130,6 @@ export default function AICoach({
     }, 3000);
   };
 
-  const quickMissions = [
-    "How can I lower my food footprint?",
-    "Show me electric vehicle vs gas car emission statistics",
-    "How do I reduce standby home energy leaks?",
-  ];
-
   return (
     <div id="ai-coach-section" className="bg-gradient-to-b from-white to-slate-50/70 border border-slate-200/95 shadow-md rounded-2xl flex flex-col h-[580px] overflow-hidden">
       {/* Advisor Header */}
@@ -236,7 +236,7 @@ export default function AICoach({
 
       {/* Suggested Quick Question Queries bar */}
       <div className="bg-[#f8fafc] px-4 py-2.5 border-t border-slate-200/80 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0 flex gap-2">
-        {quickMissions.map((mq, idx) => (
+        {QUICK_MISSIONS.map((mq, idx) => (
           <button
             id={`quick-coach-query-${idx}`}
             key={idx}

@@ -24,6 +24,14 @@ interface ChallengesProps {
   onToggleChallenge: (challengeId: string, value: number, isCompletedBefore: boolean) => void;
 }
 
+const CATEGORIES_CONFIG = [
+  { id: "all", label: "All Tasks", icon: Layers },
+  { id: "daily", label: "Daily Missions", icon: Zap },
+  { id: "weekly", label: "Weekly Marathons", icon: Trophy },
+  { id: "transport", label: "Mobility", icon: Leaf },
+  { id: "food", label: "Food & Diet", icon: Sparkles },
+];
+
 export default function Challenges({ 
   logs, 
   uid, 
@@ -36,15 +44,7 @@ export default function Challenges({
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [alertInfo, setAlertInfo] = useState<{ id: string; text: string; points: number } | null>(null);
 
-  const categories = [
-    { id: "all", label: "All Tasks", icon: Layers },
-    { id: "daily", label: "Daily Missions", icon: Zap },
-    { id: "weekly", label: "Weekly Marathons", icon: Trophy },
-    { id: "transport", label: "Mobility", icon: Leaf },
-    { id: "food", label: "Food & Diet", icon: Sparkles },
-  ];
-
-  const handleToggle = (id: string, value: number, isCompletedBefore: boolean, title: string) => {
+  const handleToggle = React.useCallback((id: string, value: number, isCompletedBefore: boolean, title: string) => {
     onToggleChallenge(id, value, isCompletedBefore);
     if (!isCompletedBefore) {
       setAlertInfo({
@@ -57,7 +57,7 @@ export default function Challenges({
     } else {
       setAlertInfo(null);
     }
-  };
+  }, [onToggleChallenge]);
 
   // Filter logic
   const filteredChallenges = challenges.filter((c) => {
@@ -199,7 +199,7 @@ export default function Challenges({
           <Filter className="w-3.5 h-3.5" />
           <span>Filter:</span>
         </span>
-        {categories.map((cat) => {
+        {CATEGORIES_CONFIG.map((cat) => {
           const IconComp = cat.icon;
           const isSelected = activeFilter === cat.id;
           return (
