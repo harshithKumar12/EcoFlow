@@ -8,11 +8,11 @@ import {
   deleteUserLog 
 } from "./lib/firebaseHelper";
 import { ActivityLog, ActivityType, EcoChallenge } from "./types";
-import Dashboard from "./components/Dashboard";
-import LogActivity from "./components/LogActivity";
-import RoutePlanner from "./components/RoutePlanner";
-import AICoach from "./components/AICoach";
-import Challenges from "./components/Challenges";
+const Dashboard = React.lazy(() => import("./components/Dashboard"));
+const LogActivity = React.lazy(() => import("./components/LogActivity"));
+const RoutePlanner = React.lazy(() => import("./components/RoutePlanner"));
+const AICoach = React.lazy(() => import("./components/AICoach"));
+const Challenges = React.lazy(() => import("./components/Challenges"));
 import AuthScreen from "./components/AuthScreen";
 import {
   Leaf,
@@ -259,7 +259,7 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-tr from-slate-50 to-emerald-50/40 flex flex-col items-center justify-center text-slate-500 gap-4">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-450 font-mono">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 font-mono">
             Securing active session environment...
           </span>
         </div>
@@ -278,6 +278,12 @@ export default function App() {
 
   return (
     <div id="full-workspace" className="min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#f0fdf4]/30 text-slate-800 flex flex-col font-sans selection:bg-emerald-600 selection:text-white">
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-emerald-600 focus:text-white focus:px-4 focus:py-2.5 focus:rounded-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-xs"
+      >
+        Skip to main content
+      </a>
       {/* Header Container bar */}
       <header className="border-b border-rose-100/10 border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 shrink-0 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -315,15 +321,15 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <TrendingDown className="w-4 h-4 text-emerald-650" />
+              <TrendingDown className="w-4 h-4 text-emerald-600" />
               <div>
                 <span className="block text-[8px] text-emerald-600 font-bold uppercase">Carbon Saved</span>
-                <span className="text-xs font-bold text-emerald-650">-{totalSaved.toFixed(1)} kg</span>
+                <span className="text-xs font-bold text-emerald-600">-{totalSaved.toFixed(1)} kg</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <Flame className="w-4 h-4 text-orange-555 animate-pulse" />
+              <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
               <div>
                 <span className="block text-[8px] text-orange-500 font-bold uppercase">Streak</span>
                 <span className="text-xs font-bold text-slate-900">{activeStreak} Days</span>
@@ -374,7 +380,7 @@ export default function App() {
       </header>
 
       {/* Workspace Content and Sidebar Tabs view */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Loading overlay */}
         {loading && (
           <div className="bg-emerald-600/10 border border-emerald-500/10 text-emerald-850 px-4 py-3 rounded-xl text-xs flex items-center gap-2.5 animate-pulse shadow-sm">
@@ -424,85 +430,87 @@ export default function App() {
 
         {/* Dynamic Display Panels inside tabs */}
         <div className="min-h-[480px]">
-          <AnimatePresence mode="wait">
-            {activeTab === "dashboard" && (
-              <motion.div
-                key="tab-dashboard"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Dashboard
-                  logs={logs}
-                  onDeleteLog={handleDeleteLog}
-                  insightsBrief={insightsBrief}
-                  insightsPredictions={insightsPredictions}
-                />
-              </motion.div>
-            )}
+          <React.Suspense fallback={<LoadingSkeleton />}>
+            <AnimatePresence mode="wait">
+              {activeTab === "dashboard" && (
+                <motion.div
+                  key="tab-dashboard"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Dashboard
+                    logs={logs}
+                    onDeleteLog={handleDeleteLog}
+                    insightsBrief={insightsBrief}
+                    insightsPredictions={insightsPredictions}
+                  />
+                </motion.div>
+              )}
 
-            {activeTab === "log" && (
-              <motion.div
-                key="tab-log"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <LogActivity onAddLog={handleAddLog} />
-              </motion.div>
-            )}
+              {activeTab === "log" && (
+                <motion.div
+                  key="tab-log"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <LogActivity onAddLog={handleAddLog} />
+                </motion.div>
+              )}
 
-            {activeTab === "maps" && (
-              <motion.div
-                key="tab-maps"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <RoutePlanner onAddCommuteLog={handleAddLog} />
-              </motion.div>
-            )}
+              {activeTab === "maps" && (
+                <motion.div
+                  key="tab-maps"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <RoutePlanner onAddCommuteLog={handleAddLog} />
+                </motion.div>
+              )}
 
-            {activeTab === "coach" && (
-              <motion.div
-                key="tab-coach"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <AICoach 
-                  onAddLogFromCoach={handleAddLog} 
-                  userName={currentUser.displayName || currentUser.email?.split("@")[0] || "Eco Companion"}
-                  logs={logs}
-                  completedChallengesCount={challengesList.filter(c => c.completed).length}
-                />
-              </motion.div>
-            )}
+              {activeTab === "coach" && (
+                <motion.div
+                  key="tab-coach"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <AICoach 
+                    onAddLogFromCoach={handleAddLog} 
+                    userName={currentUser.displayName || currentUser.email?.split("@")[0] || "Eco Companion"}
+                    logs={logs}
+                    completedChallengesCount={challengesList.filter(c => c.completed).length}
+                  />
+                </motion.div>
+              )}
 
-            {activeTab === "challenges" && (
-              <motion.div
-                key="tab-challenges"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Challenges 
-                  logs={logs} 
-                  uid={currentUser.uid}
-                  challenges={challengesList}
-                  loading={loading}
-                  points={points}
-                  activeStreak={activeStreak}
-                  onToggleChallenge={handleToggleChallenge}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              {activeTab === "challenges" && (
+                <motion.div
+                  key="tab-challenges"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Challenges 
+                    logs={logs} 
+                    uid={currentUser.uid}
+                    challenges={challengesList}
+                    loading={loading}
+                    points={points}
+                    activeStreak={activeStreak}
+                    onToggleChallenge={handleToggleChallenge}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </React.Suspense>
         </div>
       </main>
 
@@ -518,6 +526,19 @@ export default function App() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="w-full space-y-6 animate-pulse">
+      <div className="h-28 bg-slate-200/50 rounded-2xl w-full"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="h-64 bg-slate-200/50 rounded-2xl lg:col-span-2"></div>
+        <div className="h-64 bg-slate-200/50 rounded-2xl"></div>
+      </div>
+      <div className="h-44 bg-slate-200/50 rounded-2xl w-full"></div>
     </div>
   );
 }

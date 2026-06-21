@@ -82,7 +82,7 @@ export default function AuthScreen({ onGuestSignIn }: AuthScreenProps) {
         {/* Custom Instant Access Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <label htmlFor="simple-auth-name" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Full Name / Username
             </label>
             <div className="relative">
@@ -100,7 +100,7 @@ export default function AuthScreen({ onGuestSignIn }: AuthScreenProps) {
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <label htmlFor="simple-auth-email" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Email Address
             </label>
             <div className="relative">

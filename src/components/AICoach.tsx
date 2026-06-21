@@ -36,7 +36,7 @@ export default function AICoach({
   }, [userName]);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && typeof scrollRef.current.scrollIntoView === "function") {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
@@ -165,7 +165,7 @@ export default function AICoach({
                 <div className={`p-4 rounded-2xl text-xs leading-relaxed shadow-sm ${
                   isModel
                     ? "bg-white text-slate-800 border border-slate-200 rounded-tl-none"
-                    : "bg-gradient-to-tr from-emerald-605 to-teal-600 text-white font-medium rounded-tr-none"
+                    : "bg-gradient-to-tr from-emerald-600 to-teal-600 text-white font-medium rounded-tr-none"
                 }`}>
                   {isModel ? (
                     <div className="markdown-body prose prose-sm max-w-none text-slate-800 break-words">
@@ -261,6 +261,7 @@ export default function AICoach({
           <input
             id="chat-message-text-input"
             type="text"
+            aria-label="Ask your AI Coach a question"
             placeholder="Ask your Coach about food, travel, or energy reduction..."
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
@@ -269,6 +270,7 @@ export default function AICoach({
           <button
             id="chat-message-send-btn"
             type="submit"
+            aria-label="Send message to Coach"
             disabled={!userInput.trim() || loading}
             className="absolute right-2 top-1.5 p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition disabled:bg-slate-100 disabled:text-slate-400 cursor-pointer"
           >

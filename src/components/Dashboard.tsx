@@ -164,7 +164,7 @@ export default function Dashboard({
                 {carbonStatus.text}
               </h3>
             </div>
-            <div className="p-3 bg-amber-52 border border-amber-100 text-amber-500 rounded-xl shadow-sm">
+            <div className="p-3 bg-amber-50 border border-amber-100 text-amber-500 rounded-xl shadow-sm">
               <Zap className="w-5 h-5" />
             </div>
           </div>

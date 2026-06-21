@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { ActivityType, ActivityLog, AICoachMessage, RouteOption, EcoChallenge, EcoSuggestion } from "./src/types.js";
+import { calculateCO2 } from "./src/lib/carbonCalculator.js";
 
 dotenv.config();
 
@@ -25,92 +26,9 @@ const ai = apiKey
     })
   : null;
 
-// Mathematical Carbon Multipliers
+// Mathematical Carbon Multipliers delegated to centralized module
 function computeCO2(type: string, details: any): { footprint: number; saved: number } {
-  let footprint = 0;
-  let saved = 0;
-
-  if (type === ActivityType.TRANSPORT && details.transport) {
-    const { distance, mode } = details.transport;
-    const baselineCo2 = distance * 0.20; // Driving standard gas car baseline
-
-    let rate = 0.20;
-    switch (mode) {
-      case "gas_car": rate = 0.20; break;
-      case "diesel_car": rate = 0.18; break;
-      case "hybrid_car": rate = 0.10; break;
-      case "ev": rate = 0.03; break;
-      case "bus": rate = 0.05; break;
-      case "train": rate = 0.02; break;
-      case "motorbike": rate = 0.12; break;
-      case "bicycle": rate = 0.0; break;
-      case "walk": rate = 0.0; break;
-    }
-    footprint = distance * rate;
-    saved = Math.max(0, baselineCo2 - footprint);
-  } else if (type === ActivityType.ELECTRICITY && details.electricity) {
-    const { amount, source } = details.electricity;
-    const baselineCo2 = amount * 0.45; // grid standard baseline
-    let rate = 0.45;
-    switch (source) {
-      case "grid": rate = 0.45; break;
-      case "solar": rate = 0.02; break;
-      case "wind": rate = 0.01; break;
-      case "green_tariff": rate = 0.04; break;
-    }
-    footprint = amount * rate;
-    saved = Math.max(0, baselineCo2 - footprint);
-  } else if (type === ActivityType.FOOD && details.food) {
-    const { meals, dietType } = details.food;
-    const baselineCo2 = meals * 3.0; // Heavy beef standard baseline
-    let rate = 3.0;
-    switch (dietType) {
-      case "heavy_meat": rate = 3.0; break;
-      case "moderate_meat": rate = 1.8; break;
-      case "pescatarian": rate = 1.2; break;
-      case "vegetarian": rate = 0.8; break;
-      case "vegan": rate = 0.4; break;
-    }
-    footprint = meals * rate;
-    saved = Math.max(0, baselineCo2 - footprint);
-  } else if (type === ActivityType.SHOPPING && details.shopping) {
-    const { spent, category } = details.shopping;
-    const baselineCo2 = spent * 0.15; // standard fast fashion/shopping baseline
-    let rate = 0.15;
-    switch (category) {
-      case "clothing": rate = 0.15; break;
-      case "electronics": rate = 0.45; break;
-      case "furniture": rate = 0.25; break;
-      case "groceries": rate = 0.08; break;
-      case "second_hand": rate = 0.01; break;
-    }
-    footprint = spent * rate;
-    saved = Math.max(0, baselineCo2 - footprint);
-  } else if (type === ActivityType.FLIGHTS && details.flights) {
-    const { hours, class: flightClass } = details.flights;
-    let rate = 90; // general economy emission hourly rate
-    switch (flightClass) {
-      case "economy": rate = 90; break;
-      case "business": rate = 180; break;
-      case "first": rate = 270; break;
-    }
-    footprint = hours * rate;
-    // choosing economy flight over first class or alternative saves CO2
-    saved = flightClass !== "economy" ? Math.max(0, (hours * 270) - footprint) : 25;
-  } else if (type === ActivityType.WATER && details.water) {
-    const { liters } = details.water;
-    footprint = liters * 0.0003;
-    saved = Math.max(0, (liters * 1.5) * 0.0003 - footprint);
-  } else if (type === ActivityType.WASTE && details.waste) {
-    const { weight, recycled } = details.waste;
-    footprint = weight * (recycled ? 0.1 : 0.9);
-    saved = Math.max(0, (weight * 0.9) - footprint);
-  }
-
-  return {
-    footprint: Number(footprint.toFixed(2)),
-    saved: Number(saved.toFixed(2)),
-  };
+  return calculateCO2(type, details);
 }
 
 // Durable User Database Mock Persistence Layer supporting dynamic operations
@@ -394,7 +312,7 @@ app.post("/api/route-planner", async (req, res) => {
   if (!isDistanceResolved && ai) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: `Given the start location: "${originStr}" and the destination: "${destinationStr}", calculate the realistic ground driving distance in kilometers and ground driving duration in minutes. Ensure this is highly aligned with Google Maps or other actual mapping systems.
         
 Return ONLY a valid JSON object of the exact form:
@@ -525,7 +443,7 @@ app.all("/api/insights", async (req, res) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: contextPrompt,
     });
 
@@ -656,7 +574,7 @@ What specific sustainability habit shall we tackle next?`;
   try {
     // Make actual secure server-side Gemini API call with structured chat session
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: [...formattedHistory, { role: "user", parts: [{ text: message }] }],
       config: {
         systemInstruction: systemPrompt,

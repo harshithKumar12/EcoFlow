@@ -258,6 +258,7 @@ export default function Challenges({
                       {/* Interactive Circular Checkbutton with beautiful motion feedback */}
                       <button
                         type="button"
+                        aria-label={`Toggle completion of challenge: ${c.title}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggle(c.id, c.points, c.completed, c.title);

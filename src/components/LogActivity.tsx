@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ActivityType } from "../types";
+import { calculateCO2 } from "../lib/carbonCalculator";
 import {
   Car,
   Lightbulb,
@@ -54,87 +55,34 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
   const [estSaved, setEstSaved] = useState(0);
 
   useEffect(() => {
-    let fp = 0;
-    let sv = 0;
-
+    let details: any = {};
     switch (activeTab) {
       case ActivityType.TRANSPORT:
-        const baseTrans = distance * 0.20;
-        let tRate = 0.20;
-        if (transportMode === "gas_car") tRate = 0.20;
-        else if (transportMode === "diesel_car") tRate = 0.18;
-        else if (transportMode === "hybrid_car") tRate = 0.10;
-        else if (transportMode === "ev") tRate = 0.03;
-        else if (transportMode === "bus") tRate = 0.05;
-        else if (transportMode === "train") tRate = 0.02;
-        else if (transportMode === "motorbike") tRate = 0.12;
-        else if (transportMode === "bicycle" || transportMode === "walk") tRate = 0.0;
-
-        fp = distance * tRate;
-        sv = Math.max(0, baseTrans - fp);
+        details = { transport: { distance, mode: transportMode } };
         break;
-
       case ActivityType.ELECTRICITY:
-        const baseGrid = kwh * 0.45;
-        let eRate = 0.45;
-        if (energySource === "grid") eRate = 0.45;
-        else if (energySource === "solar") eRate = 0.02;
-        else if (energySource === "wind") eRate = 0.01;
-        else if (energySource === "green_tariff") eRate = 0.04;
-
-        fp = kwh * eRate;
-        sv = Math.max(0, baseGrid - fp);
+        details = { electricity: { amount: kwh, source: energySource } };
         break;
-
       case ActivityType.FOOD:
-        const baseMeat = meals * 3.0;
-        let fRate = 3.0;
-        if (dietType === "heavy_meat") fRate = 3.0;
-        else if (dietType === "moderate_meat") fRate = 1.8;
-        else if (dietType === "pescatarian") fRate = 1.2;
-        else if (dietType === "vegetarian") fRate = 0.8;
-        else if (dietType === "vegan") fRate = 0.4;
-
-        fp = meals * fRate;
-        sv = Math.max(0, baseMeat - fp);
+        details = { food: { meals, dietType } };
         break;
-
       case ActivityType.SHOPPING:
-        const baseShop = spent * 0.15;
-        let sRate = 0.15;
-        if (shopCategory === "clothing") sRate = 0.15;
-        else if (shopCategory === "electronics") sRate = 0.45;
-        else if (shopCategory === "furniture") sRate = 0.25;
-        else if (shopCategory === "groceries") sRate = 0.08;
-        else if (shopCategory === "second_hand") sRate = 0.01;
-
-        fp = spent * sRate;
-        sv = Math.max(0, baseShop - fp);
+        details = { shopping: { spent, category: shopCategory } };
         break;
-
       case ActivityType.FLIGHTS:
-        let flRate = 90;
-        if (flightClass === "economy") flRate = 90;
-        else if (flightClass === "business") flRate = 180;
-        else if (flightClass === "first") flRate = 270;
-
-        fp = flightHours * flRate;
-        sv = flightClass !== "economy" ? Math.max(0, (flightHours * 270) - fp) : 25;
+        details = { flights: { hours: flightHours, class: flightClass } };
         break;
-
       case ActivityType.WATER:
-        fp = liters * 0.0003;
-        sv = Math.max(0, (liters * 1.5) * 0.0003 - fp);
+        details = { water: { liters } };
         break;
-
       case ActivityType.WASTE:
-        fp = wasteWeight * (isRecycled ? 0.1 : 0.9);
-        sv = Math.max(0, (wasteWeight * 0.9) - fp);
+        details = { waste: { weight: wasteWeight, recycled: isRecycled } };
         break;
     }
 
-    setEstFootprint(Number(fp.toFixed(2)));
-    setEstSaved(Number(sv.toFixed(2)));
+    const { footprint, saved } = calculateCO2(activeTab, details);
+    setEstFootprint(footprint);
+    setEstSaved(saved);
   }, [
     activeTab,
     distance,
@@ -213,20 +161,20 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
   };
 
   const tabsConfig = [
-    { value: ActivityType.TRANSPORT, label: "Transport", icon: Car, color: "text-emerald-650 bg-emerald-50/70", selectedClass: "border-emerald-500 bg-emerald-500/10 text-emerald-700 shadow-sm font-extrabold" },
-    { value: ActivityType.ELECTRICITY, label: "Energy", icon: Lightbulb, color: "text-amber-655 bg-amber-50/70", selectedClass: "border-amber-500 bg-amber-500/10 text-amber-700 shadow-sm font-extrabold" },
-    { value: ActivityType.FOOD, label: "Food Diet", icon: UtensilsCrossed, color: "text-blue-650 bg-blue-50/70", selectedClass: "border-blue-500 bg-blue-500/10 text-blue-700 shadow-sm font-extrabold" },
-    { value: ActivityType.SHOPPING, label: "Shopping", icon: ShoppingBag, color: "text-violet-650 bg-violet-50/70", selectedClass: "border-violet-500 bg-violet-500/10 text-violet-700 shadow-sm font-extrabold" },
-    { value: ActivityType.FLIGHTS, label: "Flights", icon: Plane, color: "text-pink-650 bg-pink-50/70", selectedClass: "border-pink-500 bg-pink-500/10 text-pink-700 shadow-sm font-extrabold" },
-    { value: ActivityType.WATER, label: "Water", icon: Droplet, color: "text-cyan-650 bg-cyan-50/70", selectedClass: "border-cyan-500 bg-cyan-500/10 text-cyan-700 shadow-sm font-extrabold" },
-    { value: ActivityType.WASTE, label: "Waste", icon: Trash2, color: "text-slate-650 bg-slate-100", selectedClass: "border-slate-500 bg-slate-500/10 text-slate-705 shadow-sm font-extrabold" },
+    { value: ActivityType.TRANSPORT, label: "Transport", icon: Car, color: "text-emerald-600 bg-emerald-50/70", selectedClass: "border-emerald-500 bg-emerald-500/10 text-emerald-700 shadow-sm font-extrabold" },
+    { value: ActivityType.ELECTRICITY, label: "Energy", icon: Lightbulb, color: "text-amber-600 bg-amber-50/70", selectedClass: "border-amber-500 bg-amber-500/10 text-amber-700 shadow-sm font-extrabold" },
+    { value: ActivityType.FOOD, label: "Food Diet", icon: UtensilsCrossed, color: "text-blue-600 bg-blue-50/70", selectedClass: "border-blue-500 bg-blue-500/10 text-blue-700 shadow-sm font-extrabold" },
+    { value: ActivityType.SHOPPING, label: "Shopping", icon: ShoppingBag, color: "text-violet-600 bg-violet-50/70", selectedClass: "border-violet-500 bg-violet-500/10 text-violet-700 shadow-sm font-extrabold" },
+    { value: ActivityType.FLIGHTS, label: "Flights", icon: Plane, color: "text-pink-600 bg-pink-50/70", selectedClass: "border-pink-500 bg-pink-500/10 text-pink-700 shadow-sm font-extrabold" },
+    { value: ActivityType.WATER, label: "Water", icon: Droplet, color: "text-cyan-600 bg-cyan-50/70", selectedClass: "border-cyan-500 bg-cyan-500/10 text-cyan-700 shadow-sm font-extrabold" },
+    { value: ActivityType.WASTE, label: "Waste", icon: Trash2, color: "text-slate-600 bg-slate-100", selectedClass: "border-slate-500 bg-slate-500/10 text-slate-700 shadow-sm font-extrabold" },
   ];
 
   return (
     <div id="log-activity-form" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Category selector panel */}
       <div className="lg:col-span-1 bg-gradient-to-b from-white to-slate-50/80 border border-slate-200/90 shadow-sm rounded-2xl p-5 flex flex-col gap-1.5 h-fit">
-        <h3 className="text-sm font-bold text-slate-505 px-2.5 mb-2">Category selection</h3>
+        <h3 className="text-sm font-bold text-slate-700 px-2.5 mb-2">Category selection</h3>
         {tabsConfig.map((tab) => {
           const IconComp = tab.icon;
           const isSelected = activeTab === tab.value;
@@ -297,7 +245,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label htmlFor="transport-distance-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       One-way commute Distance
                     </label>
                     <span className="text-xs text-slate-800 font-mono font-bold">{distance} km</span>
@@ -346,7 +294,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
                         className={`p-3 border rounded-xl text-left transition flex flex-col justify-between cursor-pointer ${
                           energySource === src.value
                             ? "border-amber-500 bg-amber-50 text-amber-600 shadow-sm"
-                            : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-350 hover:text-slate-705"
+                            : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300 hover:text-slate-705"
                         }`}
                       >
                         <span className="text-xs font-bold">{src.label}</span>
@@ -360,7 +308,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label htmlFor="electricity-usage-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Calculated Power Usage
                     </label>
                     <span className="text-xs text-slate-800 font-mono font-bold">{kwh} kWh</span>
@@ -421,7 +369,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label htmlFor="food-meals-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Count of Daily Meals
                     </label>
                     <span className="text-xs text-slate-800 font-mono font-bold">{meals} meal(s)</span>
@@ -477,7 +425,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label htmlFor="shopping-spend-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Money Spend Amount (USD)
                     </label>
                     <span className="text-xs text-slate-800 font-mono font-bold">${spent}</span>
@@ -533,7 +481,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <label htmlFor="flight-hours-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                         Estimated Flight Duration
                       </label>
                       <span className="text-xs text-slate-800 font-mono font-bold">{flightHours} hrs</span>
@@ -568,7 +516,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
               >
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label htmlFor="water-liters-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Daily Water Intake/Use (Liters)
                     </label>
                     <span className="text-xs text-slate-800 font-mono font-bold">{liters} L</span>
@@ -602,7 +550,7 @@ export default function LogActivity({ onAddLog }: LogActivityProps) {
               >
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label htmlFor="waste-weight-range" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Total Discarded Trash Weight
                     </label>
                     <span className="text-xs text-slate-800 font-mono font-bold">{wasteWeight} kg</span>

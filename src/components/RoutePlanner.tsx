@@ -117,7 +117,7 @@ export default function RoutePlanner({ onAddCommuteLog }: RoutePlannerProps) {
           className="space-y-4"
         >
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label htmlFor="route-origin-input" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
               Trip Starting Origin
             </label>
             <div className="relative">
@@ -134,7 +134,7 @@ export default function RoutePlanner({ onAddCommuteLog }: RoutePlannerProps) {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label htmlFor="route-destination-input" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
               Destination Point
             </label>
             <div className="relative">

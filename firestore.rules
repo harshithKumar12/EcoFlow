@@ -1,8 +1,86 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    
+    // Global Safety Net default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global reusable security helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation schemas
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.email is string &&
+             (data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (data.createdAt == null || data.createdAt is string) &&
+             (data.activeStreak == null || data.activeStreak is int) &&
+             (data.points == null || data.points is int);
+    }
+
+    function isValidLog(data) {
+      return data.id is string &&
+             data.userId is string &&
+             data.timestamp is string &&
+             data.type is string &&
+             (data.co2Emoji == null || (data.co2Emoji is string && data.co2Emoji.size() <= 10)) &&
+             (data.co2Saved == null || data.co2Saved is number || data.co2Saved is int) &&
+             (data.carbonFootprint is number || data.carbonFootprint is int) &&
+             (data.notes == null || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    function isValidChallenge(data) {
+      return data.id is string &&
+             data.title is string &&
+             data.completed is bool &&
+             (data.description == null || (data.description is string && data.description.size() <= 1000)) &&
+             (data.type == null || data.type is string) &&
+             (data.co2Value == null || data.co2Value is number || data.co2Value is int) &&
+             (data.points == null || data.points is number || data.points is int) &&
+             (data.category == null || data.category is string);
+    }
+
+    function isValidMessage(data) {
+      return data.id is string &&
+             data.role is string &&
+             data.text is string &&
+             data.timestamp is string;
+    }
+
+    // Collection configurations
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isOwner(userId);
+
+      match /logs/{logId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidLog(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /challenges/{challengeId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidChallenge(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /messages/{messageId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidMessage(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
     }
   }
 }
