@@ -30,73 +30,132 @@ interface DashboardProps {
   insightsPredictions: { title: string; tip: string }[];
 }
 
+const CATEGORIES = [
+  { name: "transport", label: "Transport", color: "#10b981", icon: "🚗" },
+  { name: "electricity", label: "Energy", color: "#f59e0b", icon: "⚡" },
+  { name: "food", label: "Food", color: "#3b82f6", icon: "🥗" },
+  { name: "shopping", label: "Shopping", color: "#8b5cf6", icon: "👕" },
+  { name: "flights", label: "Flights", color: "#ec4899", icon: "✈️" },
+  { name: "water", label: "Water", color: "#06b6d4", icon: "💧" },
+  { name: "waste", label: "Waste", color: "#6b7280", icon: "🗑️" },
+];
+
 export default function Dashboard({
   logs,
   onDeleteLog,
   insightsBrief,
   insightsPredictions,
 }: DashboardProps) {
-  // Compute basic stats safely
-  const totalCarbon = logs.reduce((acc, log) => acc + (typeof log.carbonFootprint === "number" && !isNaN(log.carbonFootprint) ? log.carbonFootprint : 0), 0);
-  const totalSaved = logs.reduce((acc, log) => acc + (typeof log.co2Saved === "number" && !isNaN(log.co2Saved) ? log.co2Saved : 0), 0);
+  // Compute aggregated stats using useMemo
+  const {
+    totalCarbon,
+    totalSaved,
+    last7DaysData,
+    breakdownData,
+    biggestEmission,
+    carbonStatus,
+  } = React.useMemo(() => {
+    const computedCarbon = logs.reduce(
+      (acc, log) =>
+        acc +
+        (typeof log.carbonFootprint === "number" && !isNaN(log.carbonFootprint)
+          ? log.carbonFootprint
+          : 0),
+      0
+    );
 
-  // Group logs by date for Recharts area graph
-  const last7DaysData = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const computedSaved = logs.reduce(
+      (acc, log) =>
+        acc +
+        (typeof log.co2Saved === "number" && !isNaN(log.co2Saved)
+          ? log.co2Saved
+          : 0),
+      0
+    );
 
-    const dayLogs = logs.filter((log) => log.timestamp.startsWith(dateStr));
-    const dayFootprint = dayLogs.reduce((sum, l) => sum + (typeof l.carbonFootprint === "number" && !isNaN(l.carbonFootprint) ? l.carbonFootprint : 0), 0);
-    const daySaved = dayLogs.reduce((sum, l) => sum + (typeof l.co2Saved === "number" && !isNaN(l.co2Saved) ? l.co2Saved : 0), 0);
+    const trendData = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
 
-    // Format like 'Jun 19'
-    const formattedDate = d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
+      const dayLogs = logs.filter((log) => log.timestamp.startsWith(dateStr));
+      const dayFootprint = dayLogs.reduce(
+        (sum, l) =>
+          sum +
+          (typeof l.carbonFootprint === "number" && !isNaN(l.carbonFootprint)
+            ? l.carbonFootprint
+            : 0),
+        0
+      );
+      const daySaved = dayLogs.reduce(
+        (sum, l) =>
+          sum +
+          (typeof l.co2Saved === "number" && !isNaN(l.co2Saved)
+            ? l.co2Saved
+            : 0),
+        0
+      );
+
+      const formattedDate = d.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+
+      return {
+        date: dateStr,
+        displayDate: formattedDate,
+        Emissions: Number(dayFootprint.toFixed(1)),
+        Saved: Number(daySaved.toFixed(1)),
+      };
+    }).reverse();
+
+    const catBreakdown = CATEGORIES.map((cat) => {
+      const sum = logs
+        .filter((log) => log.type === cat.name)
+        .reduce(
+          (acc, l) =>
+            acc +
+            (typeof l.carbonFootprint === "number" && !isNaN(l.carbonFootprint)
+              ? l.carbonFootprint
+              : 0),
+          0
+        );
+      return {
+        name: cat.label,
+        value: Number(sum.toFixed(1)),
+        color: cat.color,
+        icon: cat.icon,
+      };
     });
 
+    const peakEmission = [...catBreakdown].sort((a, b) => b.value - a.value)[0];
+
+    const dailyAvg = computedCarbon / 7;
+    const computedStatus =
+      dailyAvg <= 5.0
+        ? {
+            text: "Elite Eco-Warrior",
+            color: "text-emerald-500 bg-emerald-50/70 border-emerald-200",
+          }
+        : dailyAvg <= 12.0
+        ? {
+            text: "Sustainable Commuter",
+            color: "text-blue-500 bg-blue-50/70 border-blue-200",
+          }
+        : {
+            text: "Carbon Intensive",
+            color: "text-amber-500 bg-amber-50/70 border-amber-200",
+          };
+
     return {
-      date: dateStr,
-      displayDate: formattedDate,
-      Emissions: Number(dayFootprint.toFixed(1)),
-      Saved: Number(daySaved.toFixed(1)),
+      totalCarbon: computedCarbon,
+      totalSaved: computedSaved,
+      last7DaysData: trendData,
+      breakdownData: catBreakdown,
+      biggestEmission: peakEmission,
+      carbonStatus: computedStatus,
     };
-  }).reverse();
-
-  // Group by category for bar chart & stats
-  const categories = [
-    { name: "transport", label: "Transport", color: "#10b981", icon: "🚗" },
-    { name: "electricity", label: "Energy", color: "#f59e0b", icon: "⚡" },
-    { name: "food", label: "Food", color: "#3b82f6", icon: "🥗" },
-    { name: "shopping", label: "Shopping", color: "#8b5cf6", icon: "👕" },
-    { name: "flights", label: "Flights", color: "#ec4899", icon: "✈️" },
-    { name: "water", label: "Water", color: "#06b6d4", icon: "💧" },
-    { name: "waste", label: "Waste", color: "#6b7280", icon: "🗑️" },
-  ];
-
-  const breakdownData = categories.map((cat) => {
-    const sum = logs
-      .filter((log) => log.type === cat.name)
-      .reduce((acc, l) => acc + (typeof l.carbonFootprint === "number" && !isNaN(l.carbonFootprint) ? l.carbonFootprint : 0), 0);
-    return {
-      name: cat.label,
-      value: Number(sum.toFixed(1)),
-      color: cat.color,
-      icon: cat.icon,
-    };
-  });
-
-  const biggestEmission = [...breakdownData].sort((a, b) => b.value - a.value)[0];
-
-  // Daily target benchmark (Standard target is 8.0 kg CO2 / person / day)
-  const dailyAverage = totalCarbon / 7;
-  const carbonStatus =
-    dailyAverage <= 5.0
-      ? { text: "Elite Eco-Warrior", color: "text-emerald-500 bg-emerald-50/70 border-emerald-200" }
-      : dailyAverage <= 12.0
-      ? { text: "Sustainable Commuter", color: "text-blue-500 bg-blue-50/70 border-blue-200" }
-      : { text: "Carbon Intensive", color: "text-amber-500 bg-amber-50/70 border-amber-200" };
+  }, [logs]);
 
   return (
     <div id="dashboard-section" className="space-y-6">

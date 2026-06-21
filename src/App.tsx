@@ -107,7 +107,7 @@ export default function App() {
     initLocalSession();
   }, []);
 
-  const fetchPersonalNews = async (user: any, currentLogs: ActivityLog[], currentChals: EcoChallenge[]) => {
+  const fetchPersonalNews = React.useCallback(async (user: any, currentLogs: ActivityLog[], currentChals: EcoChallenge[]) => {
     try {
       const resp = await fetch("/api/insights", {
         method: "POST",
@@ -126,9 +126,9 @@ export default function App() {
     } catch (err) {
       console.error("Personalized insights delivery issue:", err);
     }
-  };
+  }, []);
 
-  const handleAddLog = async (type: ActivityType, details: any, notes: string) => {
+  const handleAddLog = React.useCallback(async (type: ActivityType, details: any, notes: string) => {
     if (!currentUser) return;
     try {
       setLoading(true);
@@ -156,11 +156,11 @@ export default function App() {
       await addUserLog(currentUser.uid, newLog);
       
       // Update state locally
-      const updatedLogs = [newLog, ...logs];
-      setLogs(updatedLogs);
-
-      // Refresh insights for response
-      await fetchPersonalNews(currentUser, updatedLogs, challengesList);
+      setLogs(prevLogs => {
+        const updatedLogs = [newLog, ...prevLogs];
+        fetchPersonalNews(currentUser, updatedLogs, challengesList);
+        return updatedLogs;
+      });
       
       // Redirect back to dashboard safely
       setActiveTab("dashboard");
@@ -170,42 +170,46 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, challengesList, fetchPersonalNews]);
 
-  const handleDeleteLog = async (id: string) => {
+  const handleDeleteLog = React.useCallback(async (id: string) => {
     if (!currentUser) return;
     try {
       setLoading(true);
       await deleteUserLog(currentUser.uid, id);
-      const updatedLogs = logs.filter(l => l.id !== id);
-      setLogs(updatedLogs);
-      await fetchPersonalNews(currentUser, updatedLogs, challengesList);
+      setLogs(prevLogs => {
+        const updatedLogs = prevLogs.filter(l => l.id !== id);
+        fetchPersonalNews(currentUser, updatedLogs, challengesList);
+        return updatedLogs;
+      });
     } catch (err) {
       console.error(err);
       setErrorMsg("Failed to remove activity log.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, challengesList, fetchPersonalNews]);
 
-  const handleToggleChallenge = async (challengeId: string, value: number, isCompletedBefore: boolean) => {
+  const handleToggleChallenge = React.useCallback(async (challengeId: string, value: number, isCompletedBefore: boolean) => {
     if (!currentUser) return;
     try {
       const result = await toggleUserChallenge(currentUser.uid, challengeId, isCompletedBefore, value);
       if (result.success) {
         setPoints(result.newPoints);
-        const updatedChallenges = challengesList.map(c => 
-          c.id === challengeId ? { ...c, completed: !isCompletedBefore } : c
-        );
-        setChallengesList(updatedChallenges);
-        await fetchPersonalNews(currentUser, logs, updatedChallenges);
+        setChallengesList(prevList => {
+          const updatedChallenges = prevList.map(c => 
+            c.id === challengeId ? { ...c, completed: !isCompletedBefore } : c
+          );
+          fetchPersonalNews(currentUser, logs, updatedChallenges);
+          return updatedChallenges;
+        });
       }
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [currentUser, logs, fetchPersonalNews]);
 
-  const handleGuestSignIn = async (userEmail?: string, userDisplayName?: string) => {
+  const handleGuestSignIn = React.useCallback(async (userEmail?: string, userDisplayName?: string) => {
     setLoading(true);
     const resolvedEmail = userEmail?.trim() || "guest@ecoflow.app";
     const resolvedName = userDisplayName?.trim() || "Guest Explorer";
@@ -238,7 +242,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchPersonalNews]);
 
   // Determine standard user title level based on points
   const getUserRankInfo = (pts: number) => {
